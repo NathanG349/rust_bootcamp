@@ -61,7 +61,7 @@ fn handle_write(path: &str, hex_str: &str, offset: u64) {
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
-        .truncate(false) 
+        .truncate(false)
         .open(path)
         .expect("Impossible d'ouvrir le fichier");
 

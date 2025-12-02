@@ -3,7 +3,6 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(author, version, about = "A friendly command-line greeter.", long_about = None)]
 struct Args {
-
     #[arg(default_value = "World", value_name = "TARGET_NAME")]
     name: String,
 
