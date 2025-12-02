@@ -5,13 +5,12 @@ use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-
-const P: u64 = 0xD87FA3E291B4C7F3; 
-const G: u64 = 2;                  
+const P: u64 = 0xD87FA3E291B4C7F3;
+const G: u64 = 2;
 
 const LCG_A: u64 = 1103515245;
 const LCG_C: u64 = 12345;
-const LCG_M: u64 = 1u64 << 32; 
+const LCG_M: u64 = 1u64 << 32;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -22,7 +21,6 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-
     Server {
         #[arg(default_value_t = 8080)]
         port: u16,
@@ -42,7 +40,6 @@ fn main() {
     }
 }
 
-
 fn mod_pow(base: u64, exp: u64, modulus: u64) -> u64 {
     let mut result = 1u128;
     let mut base = base as u128;
@@ -59,7 +56,6 @@ fn mod_pow(base: u64, exp: u64, modulus: u64) -> u64 {
     result as u64
 }
 
-
 struct LcgCipher {
     state: u64,
 }
@@ -69,9 +65,8 @@ impl LcgCipher {
         println!("[STREAM] Generating keystream from secret...");
         println!("Algorithm: LCG (a={}, c={}, m=2^32)", LCG_A, LCG_C);
         println!("Seed: secret = {:X}", seed);
-        
+
         let cipher = LcgCipher { state: seed };
-        
 
         print!("Keystream: ");
         let mut temp_state = seed;
@@ -93,8 +88,6 @@ impl LcgCipher {
         data.iter().map(|b| b ^ self.next_byte()).collect()
     }
 }
-
-
 
 fn start_server(port: u16) {
     let address = format!("0.0.0.0:{}", port);
@@ -120,7 +113,6 @@ fn start_client(host: &str) {
 }
 
 fn handle_connection(mut stream: TcpStream) {
-
     println!("\n[DH] Starting key exchange...");
     println!("[DH] Using hardcoded DH parameters:");
     println!("p = {:X} (64-bit prime - public)", P);
@@ -149,10 +141,9 @@ fn handle_connection(mut stream: TcpStream) {
     println!("secret = {:X}", shared_secret);
     println!("\n[VERIFY] Both sides computed the same secret ✓");
 
-
     let encryptor = Arc::new(Mutex::new(LcgCipher::new(shared_secret)));
-    let decryptor = Arc::new(Mutex::new(LcgCipher::new(shared_secret))); 
-    
+    let decryptor = Arc::new(Mutex::new(LcgCipher::new(shared_secret)));
+
     println!("Secure channel established!");
 
     let mut stream_clone = stream.try_clone().expect("Clone failed");
@@ -163,7 +154,10 @@ fn handle_connection(mut stream: TcpStream) {
         let mut buffer = [0u8; 512];
         loop {
             match stream_clone.read(&mut buffer) {
-                Ok(0) => { println!("Connection closed."); std::process::exit(0); }
+                Ok(0) => {
+                    println!("Connection closed.");
+                    std::process::exit(0);
+                }
                 Ok(n) => {
                     let encrypted_data = &buffer[0..n];
                     println!("\n[NETWORK] Received encrypted message ({} bytes)", n);
@@ -171,10 +165,10 @@ fn handle_connection(mut stream: TcpStream) {
 
                     let mut cipher = decryptor_clone.lock().unwrap();
                     let decrypted = cipher.process(encrypted_data);
-                    
+
                     print_hex("Cipher", encrypted_data);
                     print_hex("Plain", &decrypted);
-                    
+
                     if let Ok(msg) = String::from_utf8(decrypted) {
                         println!("\n[DECRYPTED MSG] {}", msg.trim());
                     }
@@ -186,7 +180,6 @@ fn handle_connection(mut stream: TcpStream) {
         }
     });
 
-    
     loop {
         println!("\n[CHAT] Type message:");
         print!("> ");
@@ -194,38 +187,43 @@ fn handle_connection(mut stream: TcpStream) {
 
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
-        let plain_bytes = input.trim().as_bytes(); 
+        let plain_bytes = input.trim().as_bytes();
 
-        if plain_bytes.is_empty() { continue; }
+        if plain_bytes.is_empty() {
+            continue;
+        }
 
         println!("\n[ENCRYPT]");
         print_hex("Plain", plain_bytes);
         println!("(\"{}\")", input.trim());
 
-        
         {
             let mut cipher = encryptor.lock().unwrap();
-            
-            
+
             let current_state = cipher.state;
-            let enc = cipher.process(plain_bytes); 
-            cipher.state = current_state;          
-            let _dec = cipher.process(&enc);       
-            cipher.state = current_state;          
-            
-            println!("[TEST] Round-trip verified: \"{}\" -> encrypt -> decrypt -> \"{}\" ✓", input.trim(), input.trim());
-            
+            let enc = cipher.process(plain_bytes);
+            cipher.state = current_state;
+            let _dec = cipher.process(&enc);
+            cipher.state = current_state;
+
+            println!(
+                "[TEST] Round-trip verified: \"{}\" -> encrypt -> decrypt -> \"{}\" ✓",
+                input.trim(),
+                input.trim()
+            );
 
             let final_cipher = cipher.process(plain_bytes);
             print_hex("Cipher", &final_cipher);
 
-            println!("\n[NETWORK] Sending encrypted message ({} bytes)...", final_cipher.len());
+            println!(
+                "\n[NETWORK] Sending encrypted message ({} bytes)...",
+                final_cipher.len()
+            );
             stream.write_all(&final_cipher).unwrap();
             println!("[+] Sent {} bytes", final_cipher.len());
-        } 
-    } 
-} 
-
+        }
+    }
+}
 
 fn print_hex(label: &str, data: &[u8]) {
     print!("{}: ", label);

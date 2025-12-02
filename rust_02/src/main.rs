@@ -71,8 +71,9 @@ fn handle_write(path: &str, hex_str: &str, offset: u64) {
         .expect("Impossible d'ouvrir le fichier");
 
     // On déplace le curseur à l'offset voulu
-    file.seek(SeekFrom::Start(offset)).expect("Erreur lors du seek");
-    
+    file.seek(SeekFrom::Start(offset))
+        .expect("Erreur lors du seek");
+
     // On écrit les données
     file.write_all(&bytes).expect("Erreur lors de l'écriture");
 
@@ -86,7 +87,8 @@ fn handle_read(path: &str, offset: u64, size: usize) {
     let mut file = File::open(path).expect("Fichier introuvable");
 
     // On se déplace
-    file.seek(SeekFrom::Start(offset)).expect("Erreur lors du seek");
+    file.seek(SeekFrom::Start(offset))
+        .expect("Erreur lors du seek");
 
     // On prépare un buffer de la taille demandée
     let mut buffer = vec![0; size];
@@ -99,7 +101,7 @@ fn handle_read(path: &str, offset: u64, size: usize) {
     // On itère par blocs de 16 (standard hex dump)
     for (i, chunk) in buffer.chunks(16).enumerate() {
         let current_offset = offset + (i * 16) as u64;
-        
+
         // 1. Affichage de l'offset
         print!("{:08x}: ", current_offset);
 
@@ -116,7 +118,8 @@ fn handle_read(path: &str, offset: u64, size: usize) {
         // 3. Affichage ASCII
         print!("|");
         for byte in chunk {
-            if byte.is_ascii_graphic() || *byte == 0x20 { // 0x20 est l'espace
+            if byte.is_ascii_graphic() || *byte == 0x20 {
+                // 0x20 est l'espace
                 print!("{}", *byte as char);
             } else {
                 print!(".");
@@ -132,7 +135,9 @@ fn parse_offset(input: &str) -> Result<u64, String> {
     if input.starts_with("0x") {
         u64::from_str_radix(&input[2..], 16).map_err(|_| "Hex invalide".to_string())
     } else {
-        input.parse::<u64>().map_err(|_| "Nombre invalide".to_string())
+        input
+            .parse::<u64>()
+            .map_err(|_| "Nombre invalide".to_string())
     }
 }
 
@@ -154,7 +159,9 @@ fn decode_hex(s: &str) -> Result<Vec<u8>, String> {
 // Helper pour l'affichage Hex/ASCII du feedback d'écriture
 fn print_bytes_info(bytes: &[u8]) {
     print!("Hex: ");
-    for b in bytes { print!("{:02x} ", b); }
+    for b in bytes {
+        print!("{:02x} ", b);
+    }
     println!();
 
     print!("ASCII: ");
