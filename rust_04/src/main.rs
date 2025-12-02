@@ -223,8 +223,9 @@ fn reconstruct_path(
 fn generate_map(w: usize, h: usize) -> Vec<u8> {
     let mut rng = rand::rng();
     let mut map = vec![0u8; w * h];
-    for i in 0..map.len() {
-        map[i] = rng.random();
+    
+    for cell in &mut map {
+        *cell = rng.random(); 
     }
 
     let last_idx = map.len() - 1;
